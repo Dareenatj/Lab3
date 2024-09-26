@@ -7,13 +7,14 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This class provides the service of converting language codes to their names.
  */
 public class LanguageCodeConverter {
 
-    // TODO Task: pick appropriate instance variables to store the data necessary for this class
+    private Map<String, String> languageCodeMap;
 
     /**
      * Default constructor which will load the language codes from "language-codes.txt"
@@ -29,16 +30,26 @@ public class LanguageCodeConverter {
      * @throws RuntimeException if the resource file can't be loaded properly
      */
     public LanguageCodeConverter(String filename) {
+        languageCodeMap = new HashMap<>();
 
         try {
-            List<String> lines = Files.readAllLines(Paths.get(getClass()
-                    .getClassLoader().getResource(filename).toURI()));
+            List<String> lines = Files.readAllLines(Paths.get(Objects.requireNonNull(getClass()
+                    .getClassLoader().getResource(filename)).toURI()));
 
-            // TODO Task: use lines to populate the instance variable
-            //           tip: you might find it convenient to create an iterator using lines.iterator()
+            for (int i = 1; i < lines.size(); i++) {
+                String line = lines.get(i);
+                String[] values = line.split("\t");
 
-        // TODO Checkstyle: '}' on next line should be alone on a line.
-        } catch (IOException | URISyntaxException ex) {
+                // Check for at least two columns (language name and code)
+                if (values.length >= 2) {
+                    String languageName = values[0];
+                    String languageCode = values[1];
+                    languageCodeMap.put(languageCode, languageName);
+                }
+            }
+
+        }
+        catch (IOException | URISyntaxException ex) {
             throw new RuntimeException(ex);
         }
 
@@ -51,7 +62,7 @@ public class LanguageCodeConverter {
      */
     public String fromLanguageCode(String code) {
         // TODO Task: update this code to use your instance variable to return the correct value
-        return code;
+        return languageCodeMap.getOrDefault(code, "ISO Language Names");
     }
 
     /**
@@ -61,7 +72,12 @@ public class LanguageCodeConverter {
      */
     public String fromLanguage(String language) {
         // TODO Task: update this code to use your instance variable to return the correct value
-        return language;
+        for (Map.Entry<String, String> entry : languageCodeMap.entrySet()) {
+            if (entry.getValue().equalsIgnoreCase(language)) {
+                return entry.getKey();
+            }
+        }
+        return "Code";
     }
 
     /**
@@ -70,6 +86,6 @@ public class LanguageCodeConverter {
      */
     public int getNumLanguages() {
         // TODO Task: update this code to use your instance variable to return the correct value
-        return 0;
+        return languageCodeMap.size();
     }
 }
