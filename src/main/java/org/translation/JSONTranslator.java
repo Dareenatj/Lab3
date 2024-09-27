@@ -17,7 +17,12 @@ import org.json.JSONObject;
  */
 public class JSONTranslator implements Translator {
 
+    private static CountryCodeConverter countryCodeConverter;
+    private static final int COUNTRY_INDEX = 3;
+    private static final int LANGUAGE_INDEX = 2;
+    private static LanguageCodeConverter languageCodeConverter;
     private final JSONArray jsonArray;
+    private final String jCountry = "alpha3";
 
     /**
      * Constructs a JSONTranslator using data from the sample.json resources file.
@@ -35,8 +40,11 @@ public class JSONTranslator implements Translator {
         // read the file to get the data to populate things...
         try {
 
-            String jsonString = Files.readString(Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource(filename)).toURI()));
+            String jsonString = Files.readString(Paths.get(Objects.requireNonNull(getClass()
+                    .getClassLoader().getResource(filename)).toURI()));
             this.jsonArray = new JSONArray(jsonString);
+            countryCodeConverter = new CountryCodeConverter();
+            languageCodeConverter = new LanguageCodeConverter();
 
         }
         catch (IOException | URISyntaxException ex) {
@@ -47,20 +55,50 @@ public class JSONTranslator implements Translator {
     @Override
     public List<String> getCountryLanguages(String country) {
         List<String> languages = new ArrayList<>();
+        String countryCode;
 
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
+        // Determine the country code
+        if (country.length() != COUNTRY_INDEX) {
+            countryCode = CountryCodeConverter.fromCountry(country);
+        }
+        else {
+            countryCode = country;
+        }
 
-            if (jsonObject.getString("country").equalsIgnoreCase(country)) {
-                JSONArray languagesArray = jsonObject.getJSONArray("languages");
+        int id = -1;
 
-                for (int j = 0; j < languagesArray.length(); j++) {
-                    languages.add(languagesArray.getString(j));
-                }
+        // Find the country in the JSON array
+        for (int i = 0; i < this.jsonArray.length(); i++) {
+            JSONObject jsonObject = this.jsonArray.getJSONObject(i);
 
+            // Compare with alpha3 country code
+            if (jsonObject.getString("alpha3").equalsIgnoreCase(countryCode)) {
+                id = i;
                 break;
             }
         }
+
+        // If the country was not found, handle that case
+        if (id == -1) {
+            System.out.println("Country not found: " + country);
+            return languages;
+        }
+
+        // Retrieve languages from the found JSON object
+        JSONObject jsonObject = this.jsonArray.getJSONObject(id);
+
+        // Iterate through the keys and filter out "id", "alpha2", and "alpha3"
+        for (String key : jsonObject.keySet()) {
+            if (!"id".equals(key) && !"alpha2".equals(key) && !jCountry.equals(key)) {
+                // Convert language code to full language name and add to the list
+                String languageName = LanguageCodeConverter.fromLanguage(key);
+                languages.add(languageName);
+            }
+        }
+
+        // Debugging output
+        System.out.println("Languages found for " + country + ": " + languages.size());
+
         return languages;
     }
 
@@ -68,9 +106,11 @@ public class JSONTranslator implements Translator {
     public List<String> getCountries() {
         List<String> countries = new ArrayList<>();
 
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
-            countries.add(jsonObject.getString("country"));
+        for (int i = 0; i < this.jsonArray.length(); i++) {
+            JSONObject jsonObject = this.jsonArray.getJSONObject(i);
+
+            String countryName = jsonObject.getString(jCountry);
+            countries.add(countryName);
         }
 
         return countries;
@@ -78,21 +118,26 @@ public class JSONTranslator implements Translator {
 
     @Override
     public String translate(String country, String language) {
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
+        if (country.length() == COUNTRY_INDEX && language.length() == LANGUAGE_INDEX) {
+            int id = -1;
 
-            if (jsonObject.getString("country").equalsIgnoreCase(country)) {
-                JSONArray translations = jsonObject.getJSONArray("translations");
+            for (int i = 0; i < this.jsonArray.length(); i++) {
+                JSONObject jsonObject = this.jsonArray.getJSONObject(i);
 
-                for (int j = 0; j < translations.length(); j++) {
-                    JSONObject translationObj = translations.getJSONObject(j);
-
-                    if (translationObj.getString("language").equalsIgnoreCase(language)) {
-                        return translationObj.getString("text");
-                    }
+                if (country.equals(jsonObject.getString(jCountry))) {
+                    id = i;
+                    break;
                 }
             }
+
+            JSONObject jsonObject2 = this.jsonArray.getJSONObject(id);
+            return jsonObject2.getString(language);
         }
-        return null;
+        else {
+            String countryCode = CountryCodeConverter.fromCountry(country);
+            String languageCode = LanguageCodeConverter.fromLanguage(language);
+            translate(countryCode, languageCode);
+        }
+        return "Translation not found for the specified country and language.";
     }
 }
