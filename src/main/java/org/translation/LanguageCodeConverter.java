@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 public class LanguageCodeConverter {
 
-    private Map<String, String> languageCodeMap;
+    private static Map<String, String> languageCodeMap;
 
     /**
      * Default constructor which will load the language codes from "language-codes.txt"
@@ -62,7 +62,7 @@ public class LanguageCodeConverter {
      */
     public String fromLanguageCode(String code) {
         // TODO Task: update this code to use your instance variable to return the correct value
-        return languageCodeMap.getOrDefault(code, "ISO Language Names");
+        return languageCodeMap.getOrDefault(code.toLowerCase(), "ISO Language Names");
     }
 
     /**
@@ -70,14 +70,17 @@ public class LanguageCodeConverter {
      * @param language the name of the language
      * @return the 2-letter code of the language
      */
-    public String fromLanguage(String language) {
+    public static String fromLanguage(String language) {
         // TODO Task: update this code to use your instance variable to return the correct value
+        if (languageCodeMap == null) {
+            new LanguageCodeConverter();
+        }
         for (Map.Entry<String, String> entry : languageCodeMap.entrySet()) {
             if (entry.getValue().equalsIgnoreCase(language)) {
                 return entry.getKey();
             }
         }
-        return "Code";
+        return "Country not found";
     }
 
     /**
