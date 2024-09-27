@@ -50,7 +50,7 @@ public class JSONTranslationExample {
      */
     public String getCountryNameTranslation(String countryCode, String languageCode) {
 
-        int id = 0;
+        int id = -1;
 
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonObject = jsonArray.getJSONObject(i);
@@ -61,8 +61,13 @@ public class JSONTranslationExample {
             }
         }
 
-        JSONObject jsonObject2 = jsonArray.getJSONObject(id);
-        return jsonObject2.getString(languageCode);
+        if (id == -1) {
+            return "Country not found";
+        }
+        else {
+            JSONObject jsonObject2 = jsonArray.getJSONObject(id);
+            return jsonObject2.getString(languageCode);
+        }
     }
 
     /**
